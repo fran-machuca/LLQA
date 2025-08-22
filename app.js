@@ -5,7 +5,7 @@ const PERC_PANTALLA_BASE_LETRAS = 0.70; // Porcentaje de la altura de la pantall
 const PERC_PANTALLA_ALTURA_LETRAS = 0.55; // Porcentaje de la altura de la pantalla que ocupan las letras
 const PERC_PANTALLA_ANCHO_LETRAS = 0.90; // Porcentaje de la anchura de la pantalla que ocupan las letras
 const VOLUMEN_GENERAL = 0.7;
-const VOLUMEN_MUSICA = 0.6;
+const VOLUMEN_MUSICA = 0.3;
 const VOLUMEN_MOD_FONEMAS = 1.0;
 
 //#endregion
@@ -1328,8 +1328,8 @@ async function mostrarPalabras(letra) {
 async function crearTeclado() {
 
   // 1. Iniciar la animación del fondo dinámico
-  const fondoJuego = `url('Fondos/${Math.floor(Math.random() * 5)}.gif')`;
-  // const fondoJuego = `url('Fondos/${Math.floor(Math.random() * 12)}.png')`;
+  //const fondoJuego = `url('Fondos/${Math.floor(Math.random() * 5)}.gif')`;
+  const fondoJuego = `url('Fondos/${Math.floor(Math.random() * 9)}.png')`;
   backgroundOverlay.style.backgroundImage = fondoJuego;
   backgroundOverlay.classList.add('visible');
   fondoOriginal = fondoJuego; // Actualizar el fondo "original" para esta pantalla
@@ -1769,7 +1769,7 @@ function gestionarImagenesAnimadas(palabraSeleccionada, letraSeleccionada) {
 
   // --- Calcular tamaño y posición con unidades relativas (vw, vh) ---
   const maxImagenes = palabraSeleccionada.length;
-  const aspectRatio = 778 / 1320;
+  const aspectRatio = 195 / 330;
 
   // 1. Calcular el ancho de cada imagen para que todas quepan en el PERC_PANTALLA_ANCHO_LETRAS % de la pantalla
   let imageWidth = (windowWidth * PERC_PANTALLA_ANCHO_LETRAS) / maxImagenes;
