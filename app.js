@@ -248,6 +248,9 @@ var letraSeleccionadaInicial = null; // Variable para guardar la letra inicial e
 var letrasColocadas = [];
 var animacionesEnCurso = 0; // Contador para animaciones de letras en movimiento
 
+// Set para llevar un registro de las letras cuyos recursos ya han sido precargados en esta sesión
+var recursosLetrasCargados = {};
+
 //#endregion
 
 //#region Adición de eventos
@@ -933,29 +936,45 @@ function animarNegacionYSalida(imagen, letra) {
 // Función para precargar de forma inteligente solo las imágenes necesarias para una palabra
 async function precargarRecursosDePalabra(palabra) {
   // 1. Obtener las letras únicas de la palabra para no cargar recursos de la 'A' dos veces si la palabra es 'CASA'
-  const letrasUnicas = [...new Set(normalizarTexto(palabra).toUpperCase().split(''))];
+  const letrasUnicasOriginales = [...new Set(normalizarTexto(palabra).toUpperCase().split(''))];
+  
+  // Filtrar para precargar solo las letras que no han sido cargadas antes
+  const letrasACargar = letrasUnicasOriginales.filter(letra => recursosLetrasCargados[letra] !== 'full');
+
+  // Si no hay letras nuevas que cargar, salimos de la función inmediatamente.
+  if (letrasACargar.length === 0) {
+    console.log(`Todos los recursos para "${palabra}" ya estaban precargados.`);
+    return;
+  }
+
   const promesasDeCarga = [];
+  console.log(`Iniciando precarga para las letras nuevas: ${letrasACargar.join(', ')}`);
 
-  console.log(`Iniciando precarga para las letras: ${letrasUnicas.join(', ')}`);
+  letrasACargar.forEach(letra => {
+    let imagenesParaEsteCiclo = [];
 
-  letrasUnicas.forEach(letra => {
-    // 2. Crear una lista con TODAS las posibles imágenes para cada letra
-    const imagenesNormales = getImagenesPorLetra(letra);
-    const imagenesConMano = getImagenesConManoPorLetra(letra);
-    const imagenesNegacion = [`LetrasNegacion/${letra}i.png`, `LetrasNegacion/${letra}d.png`];
-    const imagenesParadasAnim = [`LetrasParadas/${letra}1.png`, `LetrasParadas/${letra}2.png`];
-    const imagenParada = [`LetrasParadas/${letra}.png`];
-
-    const todasLasImagenes = [
-      ...imagenesNormales,
-      ...imagenesConMano,
-      ...imagenesNegacion,
-      ...imagenesParadasAnim,
-      ...imagenParada
-    ];
+    if (recursosLetrasCargados[letra] === 'partial') {
+      // Si ya está parcialmente cargada, solo cargamos lo que falta (animaciones de victoria)
+      console.log(`Actualizando precarga de '${letra}' de partial a full.`);
+      imagenesParaEsteCiclo = [
+        ...getImagenesConManoPorLetra(letra),
+        `LetrasParadas/${letra}1.png`,
+        `LetrasParadas/${letra}2.png`
+      ];
+    } else {
+      // Si no está cargada, cargamos todo
+      console.log(`Realizando precarga full para '${letra}'.`);
+      imagenesParaEsteCiclo = [
+        ...getImagenesPorLetra(letra),
+        ...getImagenesConManoPorLetra(letra),
+        `LetrasNegacion/${letra}i.png`, `LetrasNegacion/${letra}d.png`,
+        `LetrasParadas/${letra}1.png`, `LetrasParadas/${letra}2.png`,
+        `LetrasParadas/${letra}.png`
+      ];
+    }
 
     // 3. Para cada URL de imagen, crear una promesa de carga
-    todasLasImagenes.forEach(url => {
+    imagenesParaEsteCiclo.forEach(url => {
       const promesa = new Promise((resolve) => {
         const img = new Image();
         img.onload = () => resolve(); // La imagen se ha cargado en caché
@@ -964,6 +983,9 @@ async function precargarRecursosDePalabra(palabra) {
       });
       promesasDeCarga.push(promesa);
     });
+
+    // Añadir la letra al registro para no volver a cargarla.
+    recursosLetrasCargados[letra] = 'full';
   });
 
   // 4. Esperar a que TODAS las promesas de carga de imágenes se completen
@@ -973,10 +995,16 @@ async function precargarRecursosDePalabra(palabra) {
 
 // Función específica para precargar los recursos de una letra incorrecta justo cuando se pulsa
 async function precargarRecursosLetraIncorrecta(letra) {
-  // No necesitamos letras únicas aquí, es solo una.
-  const promesasDeCarga = [];
   const letraMayus = letra.toUpperCase();
 
+  // Si los recursos para esta letra ya fueron cargados (parcial o totalmente), no hacer nada.
+  if (recursosLetrasCargados[letraMayus]) {
+    console.log(`Recursos para la letra incorrecta "${letraMayus}" ya estaban precargados.`);
+    return;
+  }
+
+  // No necesitamos letras únicas aquí, es solo una.
+  const promesasDeCarga = [];
   console.log(`Iniciando precarga bajo demanda para la letra incorrecta: ${letraMayus}`);
 
   // 1. Crear una lista con las imágenes necesarias para una letra incorrecta
@@ -1003,6 +1031,9 @@ async function precargarRecursosLetraIncorrecta(letra) {
 
   await Promise.all(promesasDeCarga);
   console.log(`Precarga bajo demanda para "${letraMayus}" completada.`);
+
+  // Marcar la letra como parcialmente cargada. No sobreescribirá si ya es 'full'.
+  recursosLetrasCargados[letraMayus] = 'partial';
 }
 
 // Función para reproducir el sonido de una palabra
@@ -1886,7 +1917,7 @@ async function gestionarImagenesAnimadas(palabraSeleccionada, letraSeleccionada)
   var nuevaImagen = document.createElement("img");
   nuevaImagen.src = arrayImagenes[0]; // Empezar siempre con la primera imagen del array específico
   nuevaImagen.style.position = "absolute";
-  nuevaImagen.style.left = "0px"; // Inicia fuera de la pantalla a la izquierda
+  nuevaImagen.style.left = -imageWidth + "px"; // Inicia completamente fuera de la pantalla a la izquierda
   nuevaImagen.style.top = targetTop + "px"; // Aplicar la posición vertical calculada
   nuevaImagen.style.height = imageHeight + "px"; // Aplicar la altura calculada dinámicamente
   nuevaImagen.style.width = imageWidth + "px"; // Aplicar el ancho calculado dinámicamente
@@ -1908,7 +1939,7 @@ async function gestionarImagenesAnimadas(palabraSeleccionada, letraSeleccionada)
 // función que anima una nueva imagen hasta una posición final
 // (Maneja solo el movimiento horizontal y el cambio de sprite/imagen final)
 function animarNuevaImagen(imagen, arrayImagenes, targetPositionHorizontal, letraSeleccionada, slotIndex) {
-  let posicionHorizontal = 0; // Posición inicial izquierda
+  let posicionHorizontal = parseFloat(imagen.style.left); // Posición inicial (fuera de la pantalla)
 
   // --- Índice local para ESTA imagen específica ---
   let imagenIndice = 0; // Para la animación de cambio de imagen
@@ -1986,19 +2017,21 @@ function animarNuevaImagen(imagen, arrayImagenes, targetPositionHorizontal, letr
       }
       // --- Fin de la lógica de fonema ---
 
-      // Comprobar si TODAS las letras han llegado a su posición final antes de habilitar el botón.
-      // Se verifica que cada hueco no solo esté ocupado, sino que contenga el objeto final con el 'element'.
+      // Comprobar si TODAS las letras han llegado a su posición final.
       const todasEnSuSitio = letrasColocadas.every(slot => slot && slot.element);
       if (todasEnSuSitio) {
         botonCorregir.disabled = false;
       }
 
-      // Si no hay más animaciones en curso, reactivar los botones
+      // Si no hay más animaciones en curso, reactivar los botones correspondientes.
       if (animacionesEnCurso === 0) {
         volver.disabled = false;
-        setTecladoFinalEnabled(true);
         botonExplicacion.disabled = false;
         botonPalabraEscuchar.disabled = false;
+        // El teclado solo se reactiva si AÚN QUEDAN HUECOS.
+        if (!todasEnSuSitio) {
+          setTecladoFinalEnabled(true);
+        }
       }
 
       return; // Salir de la función del intervalo una vez detenida
