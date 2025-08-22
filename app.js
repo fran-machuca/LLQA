@@ -971,6 +971,40 @@ async function precargarRecursosDePalabra(palabra) {
   console.log(`Precarga para "${palabra}" completada.`);
 }
 
+// Función específica para precargar los recursos de una letra incorrecta justo cuando se pulsa
+async function precargarRecursosLetraIncorrecta(letra) {
+  // No necesitamos letras únicas aquí, es solo una.
+  const promesasDeCarga = [];
+  const letraMayus = letra.toUpperCase();
+
+  console.log(`Iniciando precarga bajo demanda para la letra incorrecta: ${letraMayus}`);
+
+  // 1. Crear una lista con las imágenes necesarias para una letra incorrecta
+  const imagenesNormales = getImagenesPorLetra(letraMayus); // Animación de caminar
+  const imagenesNegacion = [`LetrasNegacion/${letraMayus}i.png`, `LetrasNegacion/${letraMayus}d.png`]; // Animación de negación
+  const imagenParada = [`LetrasParadas/${letraMayus}.png`]; // Imagen estática final (aunque no se usará, es bueno tenerla)
+
+  const todasLasImagenes = [
+    ...imagenesNormales,
+    ...imagenesNegacion,
+    ...imagenParada
+  ];
+
+  // 2. Para cada URL de imagen, crear una promesa de carga
+  todasLasImagenes.forEach(url => {
+    const promesa = new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+      img.src = url;
+    });
+    promesasDeCarga.push(promesa);
+  });
+
+  await Promise.all(promesasDeCarga);
+  console.log(`Precarga bajo demanda para "${letraMayus}" completada.`);
+}
+
 // Función para reproducir el sonido de una palabra
 async function reproducirSonidoPalabra(palabra) {
   if (modoSonido < 2 && palabra) {
@@ -1438,8 +1472,13 @@ async function crearTeclado() {
         // Reproducir el sonido con el método play()
         // if (modoSonido < 2) sonidos[Math.round(Math.random()*4)].play();
         // Añadir un evento de clic al botón que ejecute la función mostrarPalabras
-        boton.addEventListener("click", function() {
-			    gestionarImagenesAnimadas(palabraSeleccionada, letras[j]); // Pasar la letra seleccionada
+        boton.addEventListener("click", async function() {
+          // Comprobar si la letra pulsada está en la palabra correcta.
+          const letrasCorrectas = [...new Set(normalizarTexto(palabraSeleccionada).toUpperCase().split(''))];
+          if (!letrasCorrectas.includes(letras[j])) {
+            await precargarRecursosLetraIncorrecta(letras[j]);
+          }
+			    await gestionarImagenesAnimadas(palabraSeleccionada, letras[j]); // Pasar la letra seleccionada
         });
         
       //}, tiempo * 3 * j); // Multiplicar el tiempo por el índice para crear un efecto secuencial
@@ -1787,7 +1826,7 @@ function animarSalidaEnGrupo(imagen, letra) {
 }
 
 // Crear una función que gestione las imágenes animadas con las restricciones indicadas
-function gestionarImagenesAnimadas(palabraSeleccionada, letraSeleccionada) {
+async function gestionarImagenesAnimadas(palabraSeleccionada, letraSeleccionada) {
   // Encontrar el primer hueco disponible
   const imagenIndex = letrasColocadas.findIndex(slot => slot === null);
 
