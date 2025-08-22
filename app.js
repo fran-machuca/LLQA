@@ -674,6 +674,9 @@ async function handleNombreInput(event) {
 
       palabraSeleccionada = nombre;
 
+      // PRECARGA INTELIGENTE: Cargar las imágenes de las letras del nombre antes de la transición
+      await precargarRecursosDePalabra(palabraSeleccionada);
+
       // Iniciar fundido de salida
       await ocultarModoNombre();
       
@@ -926,6 +929,47 @@ function animarNegacionYSalida(imagen, letra) {
 //#endregion
 
 //#region Funciones de utilidad
+
+// Función para precargar de forma inteligente solo las imágenes necesarias para una palabra
+async function precargarRecursosDePalabra(palabra) {
+  // 1. Obtener las letras únicas de la palabra para no cargar recursos de la 'A' dos veces si la palabra es 'CASA'
+  const letrasUnicas = [...new Set(normalizarTexto(palabra).toUpperCase().split(''))];
+  const promesasDeCarga = [];
+
+  console.log(`Iniciando precarga para las letras: ${letrasUnicas.join(', ')}`);
+
+  letrasUnicas.forEach(letra => {
+    // 2. Crear una lista con TODAS las posibles imágenes para cada letra
+    const imagenesNormales = getImagenesPorLetra(letra);
+    const imagenesConMano = getImagenesConManoPorLetra(letra);
+    const imagenesNegacion = [`LetrasNegacion/${letra}i.png`, `LetrasNegacion/${letra}d.png`];
+    const imagenesParadasAnim = [`LetrasParadas/${letra}1.png`, `LetrasParadas/${letra}2.png`];
+    const imagenParada = [`LetrasParadas/${letra}.png`];
+
+    const todasLasImagenes = [
+      ...imagenesNormales,
+      ...imagenesConMano,
+      ...imagenesNegacion,
+      ...imagenesParadasAnim,
+      ...imagenParada
+    ];
+
+    // 3. Para cada URL de imagen, crear una promesa de carga
+    todasLasImagenes.forEach(url => {
+      const promesa = new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(); // La imagen se ha cargado en caché
+        img.onerror = () => resolve(); // Resolvemos igualmente para no bloquear la app si una imagen falla
+        img.src = url;
+      });
+      promesasDeCarga.push(promesa);
+    });
+  });
+
+  // 4. Esperar a que TODAS las promesas de carga de imágenes se completen
+  await Promise.all(promesasDeCarga);
+  console.log(`Precarga para "${palabra}" completada.`);
+}
 
 // Función para reproducir el sonido de una palabra
 async function reproducirSonidoPalabra(palabra) {
@@ -1428,8 +1472,11 @@ async function mostrarPreviewPalabra(palabra) {
   overlay.appendChild(previewImg);
   document.body.appendChild(overlay);
 
-  // Reproducir el sonido de la palabra
-  reproducirSonidoPalabra(palabra);
+  // Iniciar la reproducción del sonido y la precarga de recursos en paralelo
+  // para aprovechar el tiempo de la preview.
+  const promesaSonido = reproducirSonidoPalabra(palabra);
+  const promesaPrecarga = precargarRecursosDePalabra(palabra);
+  await Promise.all([promesaSonido, promesaPrecarga]);
 
   // Después de un tiempo, eliminar la preview y continuar
   await new Promise(resolve => setTimeout(resolve, 2500)); // 2.5 segundos de preview
