@@ -333,37 +333,44 @@ document.addEventListener("DOMContentLoaded", async function () {
 
 // Añadir un evento de clic al documento que active el sonido
 document.addEventListener("click", function () {
-  // Si el sonido no está activado, activarlo y cambiar el valor de la variable
-  if (!sonidoActivado) {
-    sonidoActivado = true;
-    sonidos[0].load();
-    musica[0].load();
-    sonidoElegirModo.load();
-    sonidoReelegirModo.load();
-    sonidoEligeLetra.load();
-    sonidoEligePalabra.load();
-    sonidoAciertoNombre.load();
-    sonidoAciertoPalabra.load();
-    sonidoLetrasImagen.load();
-    sonidoLetrasNombre.load();
-    sonidoCorregir.load();
-    sonidoPresentacion.load();
-    sonidoConstruyePalabras.load();
-    sonidoEscribeTuNombre.load();
+  inicializarAudioConInteraccion();
 
-    // Si es la primera interacción y estamos en el menú de inicio, reproducir la explicación
-    if (primeraVisitaInicio && modoJuego === null) {
-      // Si la bienvenida sigue activa, encolamos la presentación para después
-      if (splashScreenIsActive) {
-        presentacionDebeReproducirse = true;
-      } else {
-        // Si la bienvenida ya ha terminado, la reproducimos directamente
-        if (modoSonido < 2) reproducirPresentacion();
-      }
-      primeraVisitaInicio = false;
+  // Si es la primera interacción y estamos en el menú de inicio, reproducir la explicación
+  if (primeraVisitaInicio && modoJuego === null) {
+    // Si la bienvenida sigue activa, encolamos la presentación para después
+    if (splashScreenIsActive) {
+      presentacionDebeReproducirse = true;
+    } else {
+      // Si la bienvenida ya ha terminado, la reproducimos directamente
+      if (modoSonido < 2) reproducirPresentacion();
     }
+    primeraVisitaInicio = false;
   }
 });
+
+//#endregion
+
+//#region Funciones de inicialización y audio
+
+// Función para inicializar todos los elementos de audio.
+// Debe ser llamada por la primera interacción del usuario para cumplir con las políticas del navegador.
+function inicializarAudioConInteraccion() {
+  // Si ya está activado, no hacer nada.
+  if (sonidoActivado) return;
+
+  sonidoActivado = true;
+  console.log("Audio inicializado por interacción del usuario.");
+
+  // Cargar todos los sonidos principales para que estén listos para reproducirse.
+  const sonidosACargar = [
+    ...sonidos, ...musica, ...sonidosAplausos, ...sonidosNo,
+    sonidoElegirModo, sonidoReelegirModo, sonidoEligeLetra, sonidoEligePalabra,
+    sonidoAciertoNombre, sonidoAciertoPalabra, sonidoLetrasImagen, sonidoLetrasNombre,
+    sonidoCorregir, sonidoPresentacion, sonidoConstruyePalabras, sonidoEscribeTuNombre
+  ];
+
+  sonidosACargar.forEach(s => s.load());
+}
 
 //#endregion
 
@@ -429,6 +436,8 @@ function toggleSonidoGlobal() {
 
 // Reproduce la presentación de los modos de juego
 async function reproducirPresentacion() {
+  inicializarAudioConInteraccion();
+
   // Deshabilitar botones para evitar conflictos
   botonPresentacion.disabled = true;
   btnConstruye.disabled = true;
@@ -549,11 +558,16 @@ async function volverAIntroducirNombre() {
 
 // Inicia el modo de juego "Construye palabras"
 async function iniciarModoConstruye() {
+  inicializarAudioConInteraccion();
+
   // Deshabilitar los botones del menú para evitar dobles clics durante la transición
   btnConstruye.disabled = true;
   btnEscribe.disabled = true;
 
   modoJuego = 'construye';
+
+  // Reproducir la música de fondo desde el inicio de la transición
+  reproducirMusica(0);
 
   // Ocultar el menú de inicio con fundido
   await Promise.all([
@@ -588,8 +602,6 @@ async function iniciarModoConstruye() {
   botonesLetras.forEach(b => b.disabled = false);
   volver.disabled = false;
 
-  // Reproducir la música de fondo
-  reproducirMusica(0);
 }
 
 // Oculta los elementos de la pantalla "Letras iniciales" con una animación
@@ -603,6 +615,8 @@ async function ocultarModoLetrasIniciales() {
 
 // Inicia el modo de juego "Escribe tu nombre"
 async function iniciarModoNombre() {
+  inicializarAudioConInteraccion();
+
   // Deshabilitar los botones del menú para evitar dobles clics durante la transición
   btnConstruye.disabled = true;
   btnEscribe.disabled = true;
@@ -704,6 +718,10 @@ async function volverALetras() {
   // Borrar los botones de las palabras usando la función borrarPalabras()
   borrarPalabras();
 
+  // Detener la música anterior y empezar la nueva
+  pararMusica();
+  reproducirMusica(0);
+
   // Configurar el botón Volver para la pantalla de letras
   imagenVolver.src = 'Botones/inicio.png';
   textoVolver.textContent = 'Inicio';
@@ -727,9 +745,6 @@ async function volverALetras() {
   const botonesLetras = document.querySelectorAll('#letras-iniciales button');
   botonesLetras.forEach(b => b.disabled = false);
   volver.disabled = false;
-
-  pararMusica();
-  reproducirMusica(0);
 }
 
 // Oculta los elementos de la pantalla "Palabras" con una animación
@@ -1036,8 +1051,60 @@ async function precargarRecursosLetraIncorrecta(letra) {
   recursosLetrasCargados[letraMayus] = 'partial';
 }
 
+// Función para precargar las imágenes de las palabras de una letra inicial.
+// Se llama al seleccionar una letra para que la siguiente pantalla cargue más rápido.
+async function precargarRecursosDeLetraInicial(letra) {
+  var palabras;
+  // Reutilizamos la misma lógica de selección de palabras
+  switch (letra) {
+    case "Q": palabras = palabrasQ; break;
+    case "W": palabras = palabrasW; break;
+    case "E": palabras = palabrasE; break;
+    case "R": palabras = palabrasR; break;
+    case "T": palabras = palabrasT; break;
+    case "Y": palabras = palabrasY; break;
+    case "U": palabras = palabrasU; break;
+    case "I": palabras = palabrasI; break;
+    case "O": palabras = palabrasO; break;
+    case "P": palabras = palabrasP; break;
+    case "A": palabras = palabrasA; break;
+    case "S": palabras = palabrasS; break;
+    case "D": palabras = palabrasD; break;
+    case "F": palabras = palabrasF; break;
+    case "G": palabras = palabrasG; break;
+    case "H": palabras = palabrasH; break;
+    case "J": palabras = palabrasJ; break;
+    case "K": palabras = palabrasK; break;
+    case "L": palabras = palabrasL; break;
+    case "Ñ": palabras = palabrasÑ; break;
+    case "Z": palabras = palabrasZ; break;
+    case "X": palabras = palabrasX; break;
+    case "C": palabras = palabrasC; break;
+    case "V": palabras = palabrasV; break;
+    case "B": palabras = palabrasB; break;
+    case "N": palabras = palabrasN; break;
+    case "M": palabras = palabrasM; break;
+    default: palabras = [];
+  }
+
+  if (palabras.length === 0) return;
+
+  console.log(`Iniciando precarga de imágenes de palabras para la letra: ${letra}`);
+  const promesasDeCarga = palabras.map(palabra => {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.src = `Palabras/${palabra}.png`;
+      img.onload = resolve;
+      img.onerror = resolve; // Resolver incluso si hay un error para no bloquear nada.
+    });
+  });
+
+  await Promise.all(promesasDeCarga);
+  console.log(`Precarga de palabras para "${letra}" completada.`);
+}
+
 // Función para reproducir el sonido de una palabra
-async function reproducirSonidoPalabra(palabra) {
+async function reproducirSonidoPalabra(palabra, rehabilitarBotones = true) {
   if (modoSonido < 2 && palabra) {
     // Deshabilitar botones durante la reproducción
     botonPalabraEscuchar.disabled = true;
@@ -1056,18 +1123,21 @@ async function reproducirSonidoPalabra(palabra) {
       sonidoPalabra.play().catch(resolve);
     });
 
-    // Rehabilitar botones al finalizar
-    botonPalabraEscuchar.disabled = false;
-    botonExplicacion.disabled = false;
-    setTecladoFinalEnabled(true);
-    // Solo habilitar volver si no hay animaciones de letras en curso
-    if (animacionesEnCurso === 0) {
-      volver.disabled = false;
-    }
-    // Habilitar el botón de corregir solo si todos los huecos están llenos
-    const todasEnSuSitio = letrasColocadas.every(slot => slot && slot.element);
-    if (todasEnSuSitio) {
-      botonCorregir.disabled = false;
+    // Si se indica, rehabilitar los botones al finalizar.
+    // Esto se omite durante transiciones de pantalla.
+    if (rehabilitarBotones) {
+      botonPalabraEscuchar.disabled = false;
+      botonExplicacion.disabled = false;
+      setTecladoFinalEnabled(true);
+      // Solo habilitar volver si no hay animaciones de letras en curso
+      if (animacionesEnCurso === 0) {
+        volver.disabled = false;
+      }
+      // Habilitar el botón de corregir solo si todos los huecos están llenos
+      const todasEnSuSitio = letrasColocadas.every(slot => slot && slot.element);
+      if (todasEnSuSitio) {
+        botonCorregir.disabled = false;
+      }
     }
   }
 }
@@ -1259,6 +1329,10 @@ function crearBotones() {
       volver.disabled = true;
       pararMusica();
       letraSeleccionadaInicial = letraActual; // Guardar la letra seleccionada
+
+      // Iniciar la precarga en segundo plano sin esperar a que termine (fire and forget)
+      precargarRecursosDeLetraInicial(letraActual);
+
       await mostrarPalabras(letraActual);
     });
   }
@@ -1544,7 +1618,7 @@ async function mostrarPreviewPalabra(palabra) {
 
   // Iniciar la reproducción del sonido y la precarga de recursos en paralelo
   // para aprovechar el tiempo de la preview.
-  const promesaSonido = reproducirSonidoPalabra(palabra);
+  const promesaSonido = reproducirSonidoPalabra(palabra, false); // No rehabilitar botones, estamos en transición
   const promesaPrecarga = precargarRecursosDePalabra(palabra);
   await Promise.all([promesaSonido, promesaPrecarga]);
 
@@ -1788,7 +1862,7 @@ async function animacionPalabraCorrecta() {
   // Reproducir el sonido de la palabra correcta si estamos en modo construye
   // (En modo 'nombre', no hay un único archivo de audio para la palabra)
   if (modoJuego === 'construye' && palabraSeleccionada) {
-      reproducirSonidoPalabra(palabraSeleccionada);
+      reproducirSonidoPalabra(palabraSeleccionada, false); // No rehabilitar botones, estamos en transición
       // Pequeña pausa para que el sonido se escuche antes de que las letras se vayan
       await new Promise(resolve => setTimeout(resolve, 500));
   } else {
