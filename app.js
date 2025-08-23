@@ -2111,6 +2111,9 @@ function animarNuevaImagen(imagen, arrayImagenes, targetPositionHorizontal, letr
       // Usamos el índice que reservamos al principio para evitar la superposición
       letrasColocadas[slotIndex] = { element: imagen, letra: letraSeleccionada };
 
+      // ¡SOLUCIÓN! Recalcular la posición de TODAS las letras para corregir desajustes por redimensionamiento.
+      recalcularPosicionesLetras();
+
       // --- Lógica de reproducción de fonema al llegar ---
       let fonemaASonar = letraSeleccionada.toUpperCase();
       const letraMayus = fonemaASonar;
