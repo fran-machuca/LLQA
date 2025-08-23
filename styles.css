@@ -651,6 +651,11 @@
   top: 0; /* Posición final, cubriendo la pantalla */
 }
 
+/* Solución para el desbordamiento horizontal en móviles */
+html {
+  overflow-x: hidden;
+}
+
 body{
   /* background-image: url(https://i.gifer.com/1oxd.gif); */
   /* El fondo por defecto ahora es estático */
