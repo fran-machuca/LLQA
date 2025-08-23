@@ -16,10 +16,12 @@
   height: 80vh; /* Le damos una altura para que los porcentajes de 'top' tengan sentido */
 }
 
-#letras-iniciales div, #palabras div {
+#teclado-letras-iniciales > div, #teclado-palabras > div {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-wrap: wrap; /* Permite que los botones salten de línea si no caben */
+  gap: 2px; /* Añade un espacio entre los botones */
 }
 
 /* Contenedor para la selección de letras iniciales, con transición de fundido */
@@ -90,9 +92,11 @@
   box-sizing: border-box;
 }
 
-#menu-inicio button.highlight-menu {
+body #menu-inicio button.highlight-menu {
   transform: scale(1.5);
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.418);
+  opacity: 1; /* Asegurar que sea totalmente opaco durante la animación, incluso si está deshabilitado */
+  z-index: 2500; /* Asegura que esté por encima de todo */
 }
 
 #menu-inicio button img {
@@ -183,6 +187,7 @@
   flex-direction: column;
   gap: 15px;
   opacity: 0; /* Oculto para la animación */
+  width: 100%; /* Asegura que el contenedor ocupe todo el ancho disponible */
   transition: opacity 0.8s ease-in-out;
 }
 
@@ -210,6 +215,7 @@
   flex-direction: column;
   gap: 15px;
   opacity: 0; /* Oculto para la animación */
+  width: 100%; /* Asegura que el contenedor ocupe todo el ancho disponible */
   transition: opacity 0.8s ease-in-out;
 }
 
@@ -266,11 +272,15 @@
   top: 50%;
   transform: translateY(-50%);
   color: white;
-  font-size: 2vw;
+  font-size: 3vw;
   font-weight: bold;
   text-shadow: 2px 2px 4px #000;
   transition: opacity 0.8s ease-in-out;
   margin: 0; /* Eliminar el margen por defecto del párrafo para un centrado perfecto */
+  white-space: nowrap; /* Evita que el texto se parta en dos líneas */
+  overflow: hidden; /* Oculta lo que sobra */
+  text-overflow: ellipsis; /* Añade "..." al final si el texto es demasiado largo */
+  max-width: 75vw; /* Limita el ancho máximo para evitar que ocupe demasiado espacio */
 }
 
 #barra-superior #puntuacion {
@@ -295,11 +305,6 @@
   margin-left: 5px; /* Espacio para reemplazar el 'gap' de flexbox */
 }
 
-#barra-superior button:disabled {
-  background-color: #999;
-  cursor: not-allowed;
-}
-
 #barra-superior button:not(:disabled):hover {
   background-color: rgb(134, 149, 218);
 }
@@ -308,10 +313,15 @@
 .button-container.highlight {
   /* Elevarlo para que se vea por encima de otros elementos de la barra */
   z-index: 1001;
-
+  opacity: 1; /* Asegurar que sea totalmente opaco durante la animación */
   /* Moverlo al centro de la pantalla y hacerlo más grande.
      Los valores de translate son aproximados para moverlo desde la esquina superior izquierda al centro. */
   transform: translate(23vw, 45vh) scale(1.8);
+}
+
+/* Cuando el contenedor está resaltado, el botón dentro debe ser totalmente opaco, incluso si está deshabilitado */
+#barra-superior .button-container.highlight button {
+  opacity: 1;
 }
 
 /* Estilos específicos para los botones circulares con imagen (Corregir, Fondo, Sonido, Volver) */
@@ -537,12 +547,6 @@
   transform: scale(1.05); /* Agrandar ligeramente la imagen al pasar el ratón */
 }
 
-#boton-palabra-escuchar:disabled,
-#boton-explicacion:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
 /* Estilo para resaltar el botón de escuchar durante la explicación */
 #barra-inferior #boton-palabra-escuchar.highlight-no-color {
   /* Moverlo desde la barra inferior al centro y hacerlo más grande */
@@ -588,6 +592,13 @@
   gap: 10px;
   justify-content: center; /* Centrar las filas del teclado verticalmente */
   align-items: center; /* Centrar las filas del teclado horizontalmente */
+}
+
+#letras-finales div {
+  display: flex;
+  justify-content: center; /* Centra los botones horizontalmente */
+  flex-wrap: wrap; /* Permite que los botones pasen a la siguiente línea si no hay espacio */
+  gap: 10px; /* Espacio entre los botones */
 }
 
 #letras-finales button { /* Seleccionar los botones de las nuevas filas */
@@ -651,6 +662,24 @@
   top: 0; /* Posición final, cubriendo la pantalla */
 }
 
+/* --- Estilo unificado para botones deshabilitados --- */
+/* Aplica una opacidad reducida para indicar que no se pueden pulsar */
+#barra-superior button:disabled,
+#menu-inicio button:disabled,
+#boton-palabra-escuchar:disabled,
+#boton-explicacion:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Estilo específico para el botón de presentación deshabilitado */
+#boton-presentacion:disabled {
+  cursor: not-allowed;
+}
+#boton-presentacion:disabled img {
+  opacity: 0.6; /* Aplicamos la opacidad directamente a la imagen */
+}
+
 /* Solución para el desbordamiento horizontal en móviles */
 html {
   overflow-x: hidden;
@@ -709,15 +738,146 @@ body{
 }
 
 /* Estilos para dispositivos con pantalla pequeña (móviles y tablets en vertical) */
-@media (max-width: 768px) {
-  #titulo-inicio {
+/* @media (max-width: 768px) {
+  #titulo-inicio { */
     /* Hacemos la fuente más pequeña */
     /* font-size: 14px; */
     /* Opcional: Evita que el texto se parta en dos líneas */
-    white-space: nowrap; 
+    /* white-space: nowrap;  */
     
     /* Opcional: Si aún así no cabe, oculta lo que sobra y pone "..." */
+    /* overflow: hidden;
+    text-overflow: ellipsis;
+  }
+} */
+
+/* Estilos para pantallas en orientación vertical (más altas que anchas) */
+@media (orientation: portrait) {
+  #menu-inicio button {
+    /* Hacemos los botones más anchos y menos altos para que no se estiren */
+    width: 80vw;
+    height: 18vh;
+
+    /* Ajustamos el tamaño de la fuente y el espaciado para la nueva proporción */
+    font-size: 5vw;
+    gap: 3vw;
+  }
+
+  .button-label {
+    /* Ocultamos las etiquetas de texto para evitar solapamientos y dejar más espacio */
+    display: none;
+  }
+
+  .button-container {
+    /* Centrar verticalmente los contenedores de los botones en la barra */
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  /* Ajustar la posición de los botones para que no se solapen y tengan espacio */
+  #volver-container {
+    left: 1vh;
+  }
+  #corregir-container {
+    left: 9.5vh;
+  }
+  #fondo-container {
+    right: 9.5vh;
+  }
+  #sonido-container {
+    right: 1vh;
+  }
+
+  #barra-superior #corregir,
+  #barra-superior #fondo,
+  #barra-superior #sonido,
+  #barra-superior #volver {
+  width: 8vh; /* Fijamos el ancho para que coincida con la altura */
+  height: 8vh; /* Hacemos el botón más grande para que destaque */
+  }
+
+  #barra-superior #puntuacion {
+    position: relative; /* Contexto para el posicionamiento absoluto del número */
+    display: flex; /* Usamos flex para centrar la estrella fácilmente */
+    justify-content: center;
+    align-items: center;
+    width: 8vh; /* Mismo tamaño que los otros botones para consistencia */
+    height: 8vh;
+    font-size: 8vw; /* Hacemos el número de la puntuación más grande */
+    padding: 0; /* Nos aseguramos de que no haya padding que interfiera */
+  }
+
+  #barra-superior #puntuacion img {
+    /* La estrella ocupa todo el espacio del botón */
+    width: 100%;
+    height: 100%;
+  }
+
+  #barra-superior #puntuacion span {
+    position: absolute; /* Posicionamiento absoluto respecto al botón */
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Centrado perfecto */
+    margin-left: 0; /* Reseteamos el margen */
+    z-index: 1; /* Aseguramos que el número esté por encima de la imagen */
+  }
+
+  /* Hacer los botones del teclado final más grandes y legibles */
+  #letras-finales button {
+    width: 7.5vw; /* Aumentamos el ancho */
+    font-size: 5vw; /* Aumentamos el tamaño de la fuente */
+  }
+
+  /* Hacer los botones de la barra inferior un poco más pequeños y proporcionados */
+  #boton-palabra-escuchar,
+  #boton-explicacion {
+    height:6vh; /* Reducimos la altura */
+  }
+
+  #boton-explicacion span {
+    font-size: 7vw; /* Ajustamos el tamaño de la fuente del '?' */
+  }
+
+  /* Aumentar el tamaño de los títulos de las pantallas */
+  #prompt-letras,
+  #prompt-palabras,
+  #prompt-nombre {
+    font-size: 7vw;
+  }
+
+  /* Aumentar el tamaño de los botones de letras iniciales */
+  #letras-iniciales button {
+    width: 19vw;
+  }
+
+  /* Aumentar el tamaño de los botones de palabras */
+  #palabras button {
+    width: 32vw;
+    height: 16vh;
+  }
+
+  /* Aumentar el tamaño de los textos de la pantalla de bienvenida */
+  #splash-screen #splash-line-1 {
+    font-size: 9vw;
+  }
+
+  #splash-screen #splash-line-2 {
+    font-size: 7vw;
+  }
+
+  #splash-screen #splash-line-3 {
+    font-size: 8vw;
+  }
+
+  #titulo-inicio {
+    /* Hacemos la fuente más pequeña */
+    /* font-size: 14px; */
+    /* Forzamos que el texto se mantenga en una sola línea */
+    white-space: nowrap; 
+    font-size: 4vw;
+    /* Ocultamos lo que sobra y ponemos "..." */
     overflow: hidden;
     text-overflow: ellipsis;
+    width: 75vw; /* Le damos un ancho máximo para que sepa cuándo cortar */
   }
 }
