@@ -707,7 +707,7 @@ body{
 @media (max-width: 768px) {
   #titulo-inicio {
     /* Hacemos la fuente más pequeña */
-    font-size: 14px;
+    /* font-size: 14px; */
     /* Opcional: Evita que el texto se parta en dos líneas */
     white-space: nowrap; 
     
