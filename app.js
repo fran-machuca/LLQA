@@ -350,6 +350,56 @@ document.addEventListener("click", function () {
 
 //#endregion
 
+//#region Funciones de redimensionamiento y responsive
+
+function recalcularPosicionesLetras() {
+  // Si no hay letras colocadas en la pantalla, no hay nada que recalcular.
+  if (letrasColocadas.length === 0 || letrasColocadas.every(slot => !slot)) {
+    return;
+  }
+
+  // --- Replicamos EXACTAMENTE la lógica de cálculo de 'gestionarImagenesAnimadas' ---
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  const maxImagenes = palabraSeleccionada.length;
+  const aspectRatio = 195 / 330;
+
+  let imageWidth = (windowWidth * PERC_PANTALLA_ANCHO_LETRAS) / maxImagenes;
+  let imageHeight = imageWidth / aspectRatio;
+
+  if (imageHeight > windowHeight * PERC_PANTALLA_ALTURA_LETRAS) {
+    imageHeight = windowHeight * PERC_PANTALLA_ALTURA_LETRAS;
+    imageWidth = imageHeight * aspectRatio;
+  }
+
+  const targetBottom = windowHeight * PERC_PANTALLA_BASE_LETRAS;
+  const targetTop = targetBottom - imageHeight;
+
+  const overlapAmount = imageWidth * PERC_SOLAPAMIENTO;
+  const effectiveAdvance = imageWidth - overlapAmount;
+  const finalTotalWidth = (maxImagenes > 0) ? (imageWidth + (maxImagenes - 1) * effectiveAdvance) : 0;
+  const startLeft = (windowWidth - finalTotalWidth) / 2;
+
+  letrasColocadas.forEach((slot, index) => {
+    if (slot && slot.element) {
+      const targetPositionHorizontal = startLeft + (index * effectiveAdvance);
+      slot.element.style.left = `${targetPositionHorizontal}px`;
+      slot.element.style.top = `${targetTop}px`;
+      slot.element.style.width = `${imageWidth}px`;
+      slot.element.style.height = `${imageHeight}px`;
+    }
+  });
+}
+
+// Event listener para el redimensionamiento de la ventana (con debounce para optimizar)
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(recalcularPosicionesLetras, 100); // Espera 100ms antes de recalcular
+});
+
+//#endregion
+
 //#region Funciones de inicialización y audio
 
 // Función para inicializar todos los elementos de audio.
