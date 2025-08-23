@@ -702,3 +702,18 @@ body{
 #splash-screen #splash-line-2 {
   font-size: 4vw; /* Un poco más pequeño */
 }
+
+/* Estilos para dispositivos con pantalla pequeña (móviles y tablets en vertical) */
+@media (max-width: 768px) {
+  #titulo-inicio {
+    /* Hacemos la fuente más pequeña */
+    font-size: 1vw; 
+    
+    /* Opcional: Evita que el texto se parta en dos líneas */
+    white-space: nowrap; 
+    
+    /* Opcional: Si aún así no cabe, oculta lo que sobra y pone "..." */
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
