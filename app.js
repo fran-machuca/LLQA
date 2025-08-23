@@ -2063,23 +2063,23 @@ function animarNuevaImagen(imagen, arrayImagenes, targetPositionHorizontal, letr
 
       // --- Lógica de reproducción de fonema al llegar ---
       let fonemaASonar = letraSeleccionada.toUpperCase();
+      const letraMayus = fonemaASonar;
 
-      // Lógica para dígrafos y letras mudas, basada en la letra anterior EN PANTALLA
-      if (slotIndex > 0) {
-        const letraAnterior = letrasColocadas[slotIndex - 1]?.letra?.toUpperCase();
-        if (letraAnterior) {
-          if (fonemaASonar === 'H' && letraAnterior === 'C') {
-            fonemaASonar = 'CH';
-          } else if (fonemaASonar === 'L' && letraAnterior === 'L') {
-            fonemaASonar = 'LL';
-          } else if (fonemaASonar === 'R' && letraAnterior === 'R') {
-            fonemaASonar = 'RR';
-          }
-        }
+      // Lógica para dígrafos y letras mudas, comprobando letras adyacentes.
+      const letraAnterior = (slotIndex > 0) ? letrasColocadas[slotIndex - 1]?.letra?.toUpperCase() : null;
+      const letraSiguiente = (slotIndex < letrasColocadas.length - 1) ? letrasColocadas[slotIndex + 1]?.letra?.toUpperCase() : null;
+
+      // Comprobar si la letra actual forma un dígrafo con sus vecinas
+      if ((letraMayus === 'C' && letraSiguiente === 'H') || (letraMayus === 'H' && letraAnterior === 'C')) {
+        fonemaASonar = 'CH';
+      } else if (letraMayus === 'L' && (letraAnterior === 'L' || letraSiguiente === 'L')) {
+        fonemaASonar = 'LL';
+      } else if (letraMayus === 'R' && (letraAnterior === 'R' || letraSiguiente === 'R')) {
+        fonemaASonar = 'RR';
       }
       
       // La H es muda si no forma parte de CH
-      if (fonemaASonar === 'H') {
+      if (letraMayus === 'H' && fonemaASonar !== 'CH') {
         fonemaASonar = null;
       }
 
