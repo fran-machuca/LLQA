@@ -858,15 +858,15 @@ body{
 
   /* Aumentar el tamaño de los textos de la pantalla de bienvenida */
   #splash-screen #splash-line-1 {
-    font-size: 9vw;
+    font-size: 8vw;
   }
 
   #splash-screen #splash-line-2 {
-    font-size: 7vw;
+    font-size: 6vw;
   }
 
   #splash-screen #splash-line-3 {
-    font-size: 8vw;
+    font-size: 7vw;
   }
 
   #titulo-inicio {
