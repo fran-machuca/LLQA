@@ -137,6 +137,7 @@ var sonidoPresentacion = new Audio("Sonidos/Explicaciones/Presentacion.mp3");
 var sonidoConstruyePalabras = new Audio("Sonidos/Explicaciones/ConstruyePalabras.mp3");
 var sonidoEscribeTuNombre = new Audio("Sonidos/Explicaciones/EscribeTuNombre.mp3");
 var reproduciendo = null;
+let sonidosEnReproduccion = []; // Array para controlar TODOS los sonidos en curso
 
 // --- Ajuste de volumen por defecto ---
 sonidos.forEach(s => s.volume = VOLUMEN_GENERAL);
@@ -174,6 +175,7 @@ var explicacionMostradaNombre = false;
 
 // Control del modo de sonido: 0 = Todo, 1 = Fonemas (sin música), 2 = Muteado
 var modoSonido = 0;
+var modoSonidoAnterior = 0;
 
 // Control del modo de juego: null (inicio), 'construye', 'nombre'
 var modoJuego = null;
@@ -286,6 +288,9 @@ btnEscribe.addEventListener("click", iniciarModoNombre);
 // --- Evento para el botón de presentación ---
 botonPresentacion.addEventListener("click", reproducirPresentacion);
 inputNombre.addEventListener("keydown", handleNombreInput);
+
+// Añadir un evento que controle la visibilidad de la página para pausar/reanudar el audio.
+document.addEventListener("visibilitychange", handleVisibilityChange);
 
 // Ocultar el botón volver con la propiedad display: none tras cargar la página
 document.addEventListener("DOMContentLoaded", async function () {
@@ -402,6 +407,34 @@ window.addEventListener('resize', () => {
 
 //#region Funciones de inicialización y audio
 
+// Gestiona la pausa y reanudación del audio cuando la pestaña/app pierde o gana el foco.
+function handleVisibilityChange() {
+  if (document.hidden) {
+    // La página está oculta (cambio de pestaña, app en segundo plano, pantalla bloqueada)
+    console.log("Página oculta, pausando audio.");
+    modoSonidoAnterior = modoSonido;
+    modoSonido = 2; // Mute
+    pararMusica(); // Pausar la música de fondo
+
+    // Pausar y liberar TODAS las promesas de sonidos en curso.
+    // Hacemos una copia del array para iterar, ya que se modificará dentro del bucle.
+    [...sonidosEnReproduccion].forEach(control => {
+      control.sound.pause();
+      control.sound.currentTime = 0; // Reiniciar el tiempo de reproducción
+      control.resolve(); // Liberar la promesa para evitar bloqueos
+    });
+    sonidosEnReproduccion = []; // Limpiar el array ya que todos los sonidos han sido detenidos.
+  } else {
+    // La página vuelve a estar visible.
+    modoSonido = modoSonidoAnterior; // Restaurar el modo de sonido anterior
+    // Si había una música que debía sonar, la reanudamos.
+    console.log("Página visible, reanudando música.");
+    if (reproduciendo !== null && modoSonido === 0) {
+      reproducirMusica(reproduciendo);
+    }
+  }
+}
+
 // Función para inicializar todos los elementos de audio.
 // Debe ser llamada por la primera interacción del usuario para cumplir con las políticas del navegador.
 function inicializarAudioConInteraccion() {
@@ -480,6 +513,14 @@ function toggleSonidoGlobal() {
       textoSonido.textContent = 'Silencio';
       // Si hay música sonando, la paramos
       pararMusica();
+      // Pausar y liberar TODAS las promesas de sonidos en curso.
+      // Hacemos una copia del array para iterar, ya que se modificará dentro del bucle.
+      [...sonidosEnReproduccion].forEach(control => {
+        control.sound.pause();
+        control.sound.currentTime = 0; // Reiniciar el tiempo de reproducción
+        control.resolve(); // Liberar la promesa para evitar bloqueos
+      });
+      sonidosEnReproduccion = []; // Limpiar el array ya que todos los sonidos han sido detenidos.
       break;
   }
 }
@@ -925,8 +966,8 @@ async function corregirPalabra() {
     // Si el slot no está vacío y la letra es incorrecta (comparando con la palabra normalizada)
     if (slot && slot.letra.toUpperCase() !== palabraCorrectaNormalizada[i]) {
       // Lanzamos la animación de negación y salida
-      // Guardamos la promesa para saber cuándo ha terminado
-      if (modoSonido < 2) sonidosNo[0].play(); // Reproducir sonido de negación (en modo 0 y 1)
+      // Guardamos la promesa para saber cuándo ha terminado. Usamos playSoundAndWait sin await.
+      if (modoSonido < 2) playSoundAndWait(sonidosNo[0]); // Reproducir sonido de negación (en modo 0 y 1)
       animacionesEnCurso++; // Incrementar contador para la animación de salida
       promesasDeAnimacion.push(
         animarNegacionYSalida(slot.element, slot.letra)
@@ -1165,13 +1206,7 @@ async function reproducirSonidoPalabra(palabra, rehabilitarBotones = true) {
 
     const sonidoPalabra = new Audio(`Sonidos/Palabras/${palabra}.mp3`);
     sonidoPalabra.volume = VOLUMEN_GENERAL; // Asegurar que los sonidos dinámicos también tengan el volumen bajo
-    
-    // Usar una promesa para esperar a que el sonido termine
-    await new Promise(resolve => {
-      sonidoPalabra.onended = resolve;
-      sonidoPalabra.onerror = resolve;
-      sonidoPalabra.play().catch(resolve);
-    });
+    await playSoundAndWait(sonidoPalabra);
 
     // Si se indica, rehabilitar los botones al finalizar.
     // Esto se omite durante transiciones de pantalla.
@@ -1196,14 +1231,26 @@ async function reproducirSonidoPalabra(palabra, rehabilitarBotones = true) {
 function playSoundAndWait(sound) {
   return new Promise(resolve => {
     if (modoSonido < 2 && sound) {
-      sound.onended = resolve;
-      sound.onerror = () => {
-        console.error("Error al reproducir sonido, continuando...");
+      const controlObj = { sound, resolve };
+      sonidosEnReproduccion.push(controlObj);
+
+      const endListener = () => {
+        // Eliminar el sonido del array de control
+        const index = sonidosEnReproduccion.findIndex(item => item.sound === sound);
+        if (index > -1) {
+          sonidosEnReproduccion.splice(index, 1);
+        }
         resolve();
       };
+
+      sound.onended = endListener;
+      sound.onerror = () => { 
+        console.error("Error al reproducir sonido, continuando..."); 
+        endListener(); 
+      };
       sound.play().catch(e => {
-        console.error("Error en play() de sonido:", e);
-        resolve();
+        console.error("Error en play() de sonido:", e); 
+        endListener();
       });
     } else {
       resolve(); // Resolver inmediatamente si el sonido está desactivado o es nulo
@@ -1269,7 +1316,7 @@ async function reproducirFonemasDePalabra(palabra) {
 
   const letras = normalizarTexto(palabra).toUpperCase().split('');
   let i = 0;
-  while (i < letras.length) {
+  while (i < letras.length && modoSonido < 2) {
     let fonema = '';
     let avance = 1;
 
@@ -1296,11 +1343,7 @@ async function reproducirFonemasDePalabra(palabra) {
       const sonidoFonema = new Audio(`Sonidos/Fonemas/${fonema}.mp3`);
       // Ajustar volumen: VOLUMEN_MOD_FONEMAS en modo Fonemas, VOLUMEN_GENERAL en modo normal
       sonidoFonema.volume = (modoSonido === 1) ? VOLUMEN_MOD_FONEMAS : VOLUMEN_GENERAL;
-      await new Promise(resolve => {
-        sonidoFonema.onended = resolve;
-        sonidoFonema.onerror = resolve; // Continuar aunque falle un sonido
-        sonidoFonema.play().catch(resolve);
-      });
+      await playSoundAndWait(sonidoFonema);
     }
     i += avance;
   }
@@ -1533,7 +1576,7 @@ async function mostrarPalabras(letra) {
         }
 
         // Reproducir el sonido con el método play()
-        if (modoSonido < 2) sonidos[Math.round(Math.random()*4)].play();
+        if (modoSonido < 2) playSoundAndWait(sonidos[Math.round(Math.random()*4)]);
 
         // Añadir un evento de clic al botón que ejecute la función que quieras
         boton.addEventListener("click", async function() {
@@ -1750,16 +1793,27 @@ function borrarImagenesAnimadas() {
 
 //#region Funciones de música
 
-//Crear una función que resetee la música de fondo
-function pararMusica(){
-  if (reproduciendo !== null) {
-    musica[reproduciendo].pause();
-    musica[reproduciendo].currentTime = 0;
-  }
+// Crear una función que detenga TODA la música de fondo.
+// Se hace de forma robusta para evitar que queden pistas sonando por condiciones de carrera.
+function pararMusica() {
+  musica.forEach(track => {
+    if (!track.paused) {
+      track.pause();
+      track.currentTime = 0;
+    }
+  });
 }
 
-//Crear una función que resetee la música de fondo
-function reproducirMusica(j){
+// Crear una función que reproduzca una pista de música de fondo, asegurándose de que es la única que suena.
+function reproducirMusica(j) {
+  // Si la pista que se quiere reproducir ya es la que está sonando, no hacer nada para evitar reinicios innecesarios.
+  if (reproduciendo === j && !musica[j].paused) {
+    return;
+  }
+
+  // Parar toda la música que pudiera estar sonando antes de empezar la nueva.
+  pararMusica();
+
   reproduciendo = j;
   // Solo reproducir si estamos en el modo de sonido completo
   if (modoSonido === 0) {
@@ -1850,12 +1904,12 @@ async function animacionPalabraCorrecta() {
 
     // Reproducir sonido de aplausos
     if (modoSonido < 2) {
-      const sonidoAleatorio = sonidosAplausos[Math.floor(Math.random() * sonidosAplausos.length)];
-      sonidoAleatorio.play();
+      const aplausoAleatorio = sonidosAplausos[Math.floor(Math.random() * sonidosAplausos.length)];
+      playSoundAndWait(aplausoAleatorio); // Iniciar aplausos
       if (modoJuego === 'nombre') {
-        sonidoAciertoNombre.play();
+        playSoundAndWait(sonidoAciertoNombre); // Iniciar sonido de acierto
       } else {
-        sonidoAciertoPalabra.play();
+        playSoundAndWait(sonidoAciertoPalabra); // Iniciar sonido de acierto
       }
     }
 
@@ -2140,7 +2194,7 @@ function animarNuevaImagen(imagen, arrayImagenes, targetPositionHorizontal, letr
       if (modoSonido < 2 && fonemaASonar) {
         const sonidoFonema = new Audio(`Sonidos/Fonemas/${fonemaASonar}.mp3`);
         sonidoFonema.volume = (modoSonido === 1) ? VOLUMEN_MOD_FONEMAS : VOLUMEN_GENERAL;
-        sonidoFonema.play().catch(e => console.error("Error al reproducir el sonido del fonema:", e));
+        playSoundAndWait(sonidoFonema);
       }
       // --- Fin de la lógica de fonema ---
 
