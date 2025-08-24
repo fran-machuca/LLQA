@@ -1,0 +1,116 @@
+<!-- <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script> -->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"> <!-- Asegurar codificación UTF-8 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Asegurar que la página se vea bien en dispositivos móviles -->
+  <title>Las Letras Que Andan</title> <!-- Titulo de la pagina -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div id="splash-screen">
+    <p id="splash-line-1">Las Letras Que Andan</p>
+    <p id="splash-line-2">una aplicación del</p>
+    <p id="splash-line-3">PROYECTO PATIO</p>
+  </div>
+
+  <div id="background-transition-overlay"></div>
+
+  <div id="barra-superior">
+    <div class="barra-izquierda">
+      <p id="titulo-inicio">Proyecto PATIO - Las Letras Que Andan</p>
+      <div id="volver-container" class="button-container">
+        <button id="volver">
+          <img id="imagen-volver" src="Botones/volver.png" alt="Volver">
+        </button>
+        <span id="texto-volver" class="button-label">Volver</span>
+      </div>
+      <div id="corregir-container" class="button-container">
+        <button id="corregir">
+          <img src="Botones/corregir.png" alt="Corregir">
+        </button>
+        <span class="button-label">Corregir</span>
+      </div>
+    </div>
+    <div id="puntuacion">
+      <img src="Botones/puntos.png" alt="Puntos">
+      <span id="puntuacion-valor">0</span>
+    </div>
+    <div class="barra-derecha">
+      <div id="fondo-container" class="button-container">
+        <span class="button-label">Fondo</span>
+        <button id="fondo">
+          <img src="Botones/fondo.png" alt="Fondo">
+        </button>
+      </div>
+      <div id="sonido-container" class="button-container">
+        <span id="texto-sonido" class="button-label">Sonido</span>
+        <button id="sonido">
+          <img id="imagen-sonido" src="Botones/sonido.png" alt="Sonido">
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <button id="boton-presentacion">
+    <img src="Botones/explicacion.png" alt="Presentación">
+  </button>
+
+  <div id="contenedor">
+    <img id="logo-inicio" src="Otros/logo.PNG" alt="Logo Letrilandia">
+    <div id="celebracion-gif-contenedor">
+      <img id="celebracion-gif" src="" alt="Celebración">
+    </div>
+    <div id="menu-inicio">
+      <button id="iniciar-construye-palabras">
+        <img src="Botones/letras.png" alt="Construir">
+        Construye palabras
+      </button>
+      <button id="iniciar-escribe-nombre">
+        <img src="Botones/nombre.png" alt="Nombre">
+        Escribe tu nombre
+      </button>
+    </div>
+    <div id="contenedor-nombre">
+      <p id="prompt-nombre">Escribe un nombre y pulsa INTRO</p>
+      <input type="password" id="input-nombre" maxlength="13">
+    </div>
+    <div id="letras-iniciales"> <!-- Crear un div para las letras iniciales -->
+      <p id="prompt-letras">Elige una letra para practicar</p>
+      <div id="teclado-letras-iniciales">
+        <div id="fila1"></div> <!-- fila para las letras iniciales -->
+        <div id="fila2"></div> <!-- fila para las letras iniciales -->
+        <div id="fila3"></div> <!-- fila para las letras iniciales -->
+      </div>
+    </div>
+    <div id="palabras"> <!-- Crear un div para las palabras -->
+      <p id="prompt-palabras">Elige una imagen</p>
+      <div id="teclado-palabras">
+        <div id="fila4"></div> <!-- fila para las palabras -->
+        <div id="fila5"></div> <!-- fila para las palabras -->
+      </div>
+    </div>
+  </div>
+
+  <div id="barra-inferior">
+    <button id="boton-explicacion">
+      <span>?</span>
+    </button>
+    <div id="letras-finales"> <!-- Teclado de letras finales -->
+      <div id="fila6"></div>
+      <div id="fila7"></div>
+    </div>
+    <button id="boton-palabra-escuchar">
+      <img id="imagen-palabra-escuchar" src="" alt="Escuchar palabra">
+    </button>
+  </div>
+
+  <div id="letras-imagenes"> <!-- Crear un div para las imagenes de las letras -->
+    <!-- <img id="animacion"></div> --> <!-- image para imagen de letra -->
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
